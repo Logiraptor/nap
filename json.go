@@ -2,6 +2,7 @@ package nap
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"net/http"
 )
@@ -28,4 +29,14 @@ func JSON(data interface{}) Response {
 // JSONError returns a standard error message
 func JSONError(code int, message string) Response {
 	return Multi(StatusCode(code), JSON(jsonError{Code: code, Error: message}))
+}
+
+// JSONErrorf returns a standard error message
+func JSONErrorf(code int, message string, args ...interface{}) Response {
+	return Multi(StatusCode(code), JSON(jsonError{Code: code, Error: fmt.Sprintf(message, args...)}))
+}
+
+// JSONSuccess returns a generic json success message
+func JSONSuccess() Response {
+	return JSON(struct{ Status string }{"Success"})
 }
