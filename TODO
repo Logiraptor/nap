@@ -1,4 +1,4 @@
 Goals:
-	- Absolutely no Google App Engine specific code.
-	- No reflection (Outside of serialization to network, db, etc.)
-	- No weird junk like wallhack.Exampler
+	+- Absolutely no Google App Engine specific code.
+	+- No reflection (Outside of serialization to network, db, etc.)
+	+- No weird junk like wallhack.Exampler

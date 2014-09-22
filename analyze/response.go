@@ -1,35 +1,51 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os/exec"
 	"strings"
-	"text/template"
 
 	"code.google.com/p/go.tools/go/types"
 )
 
 // Resource describes an exposed rest resource
 type Resource struct {
-	Name   string
-	URL    string
-	Get    []Response
-	Put    []Response
-	Post   []Response
-	Delete []Response
+	Name      string
+	Doc       string
+	URL       string
+	Get       []Response
+	Put       []Response
+	Post      []Response
+	Delete    []Response
+	GetDoc    string
+	PostDoc   string
+	PutDoc    string
+	DeleteDoc string
 }
 
 // Response describes a potential rest response
 type Response interface {
 	Describe() string
+	Example() string
+}
+
+type successResponse struct{}
+
+func (s successResponse) Describe() string {
+	return "{\n\tStatus: string\n}"
+}
+
+func (s successResponse) Example() string {
+	return "{\n\t\"Status\": \"Success\"\n}"
 }
 
 type errorResponse struct{}
 
 func (e errorResponse) Describe() string {
-	return "{\n\tError: string\n}"
+	return "{\n\tError: string\n\tCode: int\n}"
+}
+
+func (e errorResponse) Example() string {
+	return "{\n\t\"Error\": \"You must log in to do that\"\n\t\"Code\": 405\n}"
 }
 
 type jsonResponse struct {
@@ -46,6 +62,13 @@ func (j jsonResponse) Describe() string {
 	fillImports(imports, j.typeSpec)
 
 	return write(j.typeSpec, map[types.Type]struct{}{}, 0)
+}
+
+func (j jsonResponse) Example() string {
+	return getOutput(getJSON, map[string]interface{}{
+		"Type":    j.typeSpec,
+		"Imports": getImports(j.typeSpec, map[types.Type]struct{}{}),
+	})
 }
 
 func fillImports(imp map[string]struct{}, t types.Type) {
@@ -103,43 +126,4 @@ func write(t types.Type, seen map[types.Type]struct{}, depth int) string {
 		resp += fmt.Sprintf("%T", typ)
 	}
 	return resp
-}
-
-type namedResponse struct {
-	name *types.Named
-	desc string
-}
-
-func (n namedResponse) Describe() string {
-	if n.desc != "" {
-		return n.desc
-	}
-
-	return "not yet implemented"
-}
-
-func getOutput(src string, data interface{}) string {
-	fileName := "nap_temp_.go"
-	tmpl := template.New("temp")
-	tmpl, err := tmpl.Parse(src)
-	if err != nil {
-		return err.Error()
-	}
-	buf := new(bytes.Buffer)
-	err = tmpl.ExecuteTemplate(buf, "temp", data)
-	if err != nil {
-		return err.Error()
-	}
-	err = ioutil.WriteFile(fileName, buf.Bytes(), 0666)
-	if err != nil {
-		return err.Error()
-	}
-
-	cmd := exec.Command("go", "run", fileName)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return err.Error()
-	}
-
-	return string(output)
 }

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<title>Nap Docs</title>
+    <!-- 1. Load platform.js for polyfill support. -->
+    <script src="/bower_components/platform/platform.js"></script>
+    <!-- 2. Use an HTML Import to bring in the element. -->
+    <link rel="import" href="/bower_components/core-ajax/core-ajax.html">
+    <link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
+    <link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
+    <link rel="import" href="/bower_components/paper-shadow/paper-shadow.html">
+    <link rel="import" href="/custom/nap-resource/nap-resource.html">
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+    <style>
+	body {
+		font-family: 'Roboto', sans-serif;
+		margin: 0px;
+	}
+	.container {
+		padding: 50px;
+		width: 100%;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	core-toolbar{
+		background-color: #e51c23;
+		color: white;
+	}
+	@media (min-width: 800px) {
+		.container{
+			width: 80%;
+		}
+	}
+    </style>
+  </head>
+  <body>
+    <!-- 3. Declare the element. Configure using its attributes. -->
+    <core-ajax url="/api.json" handleAs="json"></core-ajax>
+
+	<core-toolbar>
+	  <core-icon-button icon="menu" on-tap="{{menuAction}}"></core-icon-button>
+	  <div flex><b>Nap</b></div>
+	  <core-icon-button icon="more" on-tap="{{moreAction}}"></core-icon-button>
+	</core-toolbar>
+    <div class="container">
+    	<paper-shadow z="1"><paper-shadow>
+    </div>
+
+    <script>
+      // Wait for 'polymer-ready'. Ensures the element is upgraded.
+      window.addEventListener('polymer-ready', function(e) {
+        var ajax = document.querySelector('core-ajax');
+
+        // Respond to events it fires.
+        ajax.addEventListener('core-response', function(e) {
+	        var container = document.querySelector('.container');
+	        for (var i = this.response.Resources.length - 1; i >= 0; i--) {
+	        	var res = this.response.Resources[i];
+	        	var view = document.createElement('nap-resource');
+	        	view.resource = res;
+	        	container.appendChild(view);
+	        };
+        });
+
+        ajax.go(); // Call its API methods.
+
+      });
+    </script>
+  </body>
+</html>

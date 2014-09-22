@@ -1,0 +1,47 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="/bower_components/paper-item/paper-item.html">
+<link rel="import" href="/bower_components/core-collapse/core-collapse.html">
+<link rel="import" href="/custom/nap-response/nap-response.html">
+
+<polymer-element name="nap-method" attributes="method resource">
+  <template>
+  	<style>
+  	</style>
+      <h2 id="show">{{method}}
+      <template if="{{resource.Responses == null}}">
+          Unavailable
+        </template></h2>
+      {{resource.Doc}}
+
+      <core-collapse id="collapse">
+        <template if="{{resource.Responses != null}}">
+          <h3>Responses:<h3>
+          <template repeat="{{resp in resource.Responses}}">
+            <nap-response response="{{resp}}"></nap-response>
+          </template>
+          <pre id="example"></pre>
+        </template>
+      </core-collapse>
+  </template>
+  <script>
+  Polymer({
+    ready: function() {
+      var show = this.$.show;
+      if (typeof show === "undefined") {
+        console.log("u");
+        return;
+      }
+      var collapse = this.$.collapse;
+      show.addEventListener('click', function() {
+        console.log("c");
+        collapse.toggle();
+      });
+    },
+    method: "Get",
+  	resource: {},
+    focus: "asd"
+  });
+  </script>
+</polymer-element>

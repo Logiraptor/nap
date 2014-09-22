@@ -1,0 +1,32 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/core-collapse/core-collapse.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/custom/nap-method/nap-method.html">
+
+<polymer-element name="nap-resource">
+  <template>
+  	<style>
+  	</style>
+  	<h1 id="show">{{resource.Name}}</h1>
+  	{{resource.Doc}}
+    
+  	<core-collapse id="collapse">
+      <nap-method resource="{{resource.Get}}" method="GET"></nap-method>
+      <nap-method resource="{{resource.Post}}" method="POST"></nap-method>
+      <nap-method resource="{{resource.Put}}" method="PUT"></nap-method>
+      <nap-method resource="{{resource.Delete}}" method="DELETE"></nap-method>
+    </core-collapse>
+  </template>
+  <script>
+  Polymer({
+    ready: function() {
+      var show = this.$.show;
+      var collapse = this.$.collapse;
+      show.addEventListener('click', function() {
+        collapse.toggle();
+      })
+    },
+    resource: {}
+  });
+  </script>
+</polymer-element>
