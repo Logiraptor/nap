@@ -1,25 +1,51 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"code.google.com/p/go.tools/go/types"
 )
 
+type Method struct {
+	Doc       string
+	Params    map[string]struct{}
+	Responses []Response
+}
+
+func (m *Method) MarshalJSON() ([]byte, error) {
+	type resp struct {
+		Schema  string
+		Example string
+	}
+	var resps []resp
+
+	for _, r := range m.Responses {
+		resps = append(resps, resp{
+			Schema:  r.Describe(),
+			Example: r.Example(),
+		})
+	}
+
+	var params = []string{}
+	for k := range m.Params {
+		params = append(params, k)
+	}
+
+	return json.Marshal(map[string]interface{}{
+		"Doc":       m.Doc,
+		"Params":    params,
+		"Responses": resps,
+	})
+}
+
 // Resource describes an exposed rest resource
 type Resource struct {
-	Name      string
-	Doc       string
-	URL       string
-	Get       []Response
-	Put       []Response
-	Post      []Response
-	Delete    []Response
-	GetDoc    string
-	PostDoc   string
-	PutDoc    string
-	DeleteDoc string
+	Name    string
+	Doc     string
+	URL     string
+	Methods map[string]*Method
 }
 
 // Response describes a potential rest response

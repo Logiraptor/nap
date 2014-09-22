@@ -10,7 +10,7 @@
     <link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
     <link rel="import" href="/bower_components/paper-shadow/paper-shadow.html">
     <link rel="import" href="/custom/nap-resource/nap-resource.html">
-    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <style>
 	body {
 		font-family: 'Roboto', sans-serif;
@@ -35,12 +35,12 @@
   </head>
   <body>
     <!-- 3. Declare the element. Configure using its attributes. -->
-    <core-ajax url="/api.json" handleAs="json"></core-ajax>
+    <core-ajax url="{{.}}" handleAs="json"></core-ajax>
 
 	<core-toolbar>
-	  <core-icon-button icon="menu" on-tap="{{menuAction}}"></core-icon-button>
+	  <core-icon-button icon="menu"></core-icon-button>
 	  <div flex><b>Nap</b></div>
-	  <core-icon-button icon="more" on-tap="{{moreAction}}"></core-icon-button>
+	  <core-icon-button icon="more"></core-icon-button>
 	</core-toolbar>
     <div class="container">
     	<paper-shadow z="1"><paper-shadow>

@@ -14,36 +14,6 @@ import (
 	"code.google.com/p/go.tools/go/types"
 )
 
-type outputResponse struct {
-	Schema  string
-	Example string
-}
-
-type outputResource struct {
-	Name string
-	Doc  string
-	Get  struct {
-		Responses []outputResponse
-		Doc       string
-	}
-	Put struct {
-		Responses []outputResponse
-		Doc       string
-	}
-	Post struct {
-		Responses []outputResponse
-		Doc       string
-	}
-	Delete struct {
-		Responses []outputResponse
-		Doc       string
-	}
-}
-
-type outputFormat struct {
-	Resources []outputResource
-}
-
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: analyze [package name]")
@@ -84,16 +54,6 @@ func processPackage(path string, fSet *token.FileSet, pkg *ast.Package) {
 		return true
 	})
 
-	// Find all the methods
-	var methods []*ast.FuncDecl
-	ast.Inspect(pkg, func(node ast.Node) bool {
-		if d, ok := node.(*ast.FuncDecl); ok && d.Recv != nil {
-			methods = append(methods, d)
-			return false
-		}
-		return true
-	})
-
 	cfg := &types.Config{}
 	info := &types.Info{
 		Types: map[ast.Expr]types.TypeAndValue{},
@@ -111,6 +71,7 @@ func processPackage(path string, fSet *token.FileSet, pkg *ast.Package) {
 		resource := new(Resource)
 		resource.Name = spec.Name.String()
 		resource.Doc = node.Doc.Text()
+		resource.Methods = make(map[string]*Method)
 		// Get the receiver type
 		t, _, err := types.EvalNode(fSet, spec.Name, typePackage, typePackage.Scope())
 		if err != nil {
@@ -119,118 +80,32 @@ func processPackage(path string, fSet *token.FileSet, pkg *ast.Package) {
 
 		targetType := t.(*types.Named)
 
-		for _, method := range methods {
-			t, _, err = types.EvalNode(fSet, method.Recv.List[0].Type, typePackage, typePackage.Scope())
-			if err != nil {
-				log.Fatalln(err.Error())
-			}
-			if !types.Identical(t, targetType) {
-				continue
-			}
-
-			ast.Inspect(method.Body, func(node ast.Node) bool {
-				s, ok := node.(*ast.ReturnStmt)
-				if !ok {
+		// Find all the methods for targetType
+		var methods []*ast.FuncDecl
+		ast.Inspect(pkg, func(node ast.Node) bool {
+			if d, ok := node.(*ast.FuncDecl); ok {
+				if d.Recv == nil {
 					return true
 				}
 
-				ast.Inspect(s, func(node ast.Node) bool {
-					c, ok := node.(*ast.CallExpr)
-					if !ok {
-						return true
-					}
+				t, _, err := types.EvalNode(fSet, d.Recv.List[0].Type, typePackage, typePackage.Scope())
+				if err != nil {
+					log.Fatalln(err.Error())
+				}
 
-					resp := analyzeNapCall(typePackage, info, c)
-					if resp == nil {
-						return true
-					}
-
-				methodSwitch:
-					switch method.Name.String() {
-					case "Get":
-						resource.GetDoc = method.Doc.Text()
-						for _, r := range resource.Get {
-							if r == resp {
-								break methodSwitch
-							}
-						}
-						resource.Get = append(resource.Get, resp)
-					case "Post":
-						resource.PostDoc = method.Doc.Text()
-						for _, r := range resource.Post {
-							if r == resp {
-								break methodSwitch
-							}
-						}
-						resource.Post = append(resource.Post, resp)
-					case "Put":
-						resource.PutDoc = method.Doc.Text()
-						for _, r := range resource.Put {
-							if r == resp {
-								break methodSwitch
-							}
-						}
-						resource.Put = append(resource.Put, resp)
-					case "Delete":
-						resource.DeleteDoc = method.Doc.Text()
-						for _, r := range resource.Delete {
-							if r == resp {
-								break methodSwitch
-							}
-						}
-						resource.Delete = append(resource.Delete, resp)
-					}
-
+				if types.Identical(t, targetType) {
+					methods = append(methods, d)
 					return false
-
-				})
-
-				return false
-			})
+				}
+				return true
+			}
+			return true
+		})
+		for _, method := range methods {
+			analyzeMethod(fSet, typePackage, info, method, resource)
 		}
 
 		resources = append(resources, *resource)
-	}
-
-	var output outputFormat
-
-	for _, res := range resources {
-		var outRes outputResource
-		outRes.Name = res.Name
-		outRes.Doc = res.Doc
-		outRes.Get.Doc = res.GetDoc
-		outRes.Post.Doc = res.PostDoc
-		outRes.Put.Doc = res.PutDoc
-		outRes.Delete.Doc = res.DeleteDoc
-
-		for _, resp := range res.Get {
-			outRes.Get.Responses = append(outRes.Get.Responses, outputResponse{
-				Schema:  resp.Describe(),
-				Example: resp.Example(),
-			})
-		}
-
-		for _, resp := range res.Post {
-			outRes.Post.Responses = append(outRes.Post.Responses, outputResponse{
-				Schema:  resp.Describe(),
-				Example: resp.Example(),
-			})
-		}
-
-		for _, resp := range res.Put {
-			outRes.Put.Responses = append(outRes.Put.Responses, outputResponse{
-				Schema:  resp.Describe(),
-				Example: resp.Example(),
-			})
-		}
-
-		for _, resp := range res.Delete {
-			outRes.Delete.Responses = append(outRes.Delete.Responses, outputResponse{
-				Schema:  resp.Describe(),
-				Example: resp.Example(),
-			})
-		}
-		output.Resources = append(output.Resources, outRes)
 	}
 
 	out := os.Stdout
@@ -242,7 +117,9 @@ func processPackage(path string, fSet *token.FileSet, pkg *ast.Package) {
 		}
 	}
 
-	json.NewEncoder(out).Encode(output)
+	json.NewEncoder(out).Encode(map[string]interface{}{
+		"Resources": resources,
+	})
 }
 
 func analyzeNapCall(pkg *types.Package, info *types.Info, c *ast.CallExpr) Response {

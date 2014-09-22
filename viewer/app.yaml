@@ -1,0 +1,9 @@
+application: nap-docs
+runtime: go
+api_version: go1
+version: chat-test
+
+handlers:
+- url: /.*
+  script: _go_app
+  secure: always
